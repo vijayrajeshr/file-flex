@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pro File Converter & Compressor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #536DFE;
+            --secondary-color: #BDBDBD;
+            --background-color: #F8F9FA;
+            --card-background: #FFFFFF;
+            --text-color: #333;
+            --shadow-light: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --border-radius: 12px;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--background-color);
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden; /* Prevent scrollbar from background stars */
+            position: relative;
+        }
+
+        /* Background Stars Animation */
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .stars::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, #fff 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: twinkle 5s linear infinite;
+        }
+
+        @keyframes twinkle {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 500px 500px; }
+        }
+
+        #app {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            padding: 3rem;
+            max-width: 550px;
+            width: 100%;
+            box-shadow: var(--shadow-light);
+            text-align: center;
+            border: 2px solid transparent;
+            transition: border-color 0.3s ease;
+            position: relative; /* To stay above the stars */
+        }
+
+        #app.drag-over {
+            border-color: var(--primary-color);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        p.subtitle {
+            color: var(--secondary-color);
+            margin-top: 0;
+            margin-bottom: 2rem;
+        }
+
+        label {
+            display: block;
+            text-align: left;
+            margin: 1.5rem 0 0.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .drop-area {
+            border: 2px dashed var(--secondary-color);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s ease, background-color 0.3s ease;
+        }
+        
+        .drop-area:hover, .drop-area.drag-over {
+            border-color: var(--primary-color);
+            background-color: rgba(83, 109, 254, 0.05);
+        }
+
+        .drop-area p {
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        .drop-area input {
+            display: none;
+        }
+        
+        select, input[type="number"] {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            outline: none;
+            box-sizing: border-box;
+            background: #F0F2F5;
+            transition: border-color 0.3s ease;
+        }
+
+        select:focus, input:focus {
+            border-color: var(--primary-color);
+        }
+
+        button {
+            width: 100%;
+            padding: 1rem;
+            margin-top: 2rem;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        button:hover {
+            background: #465DEE;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        #output {
+            margin-top: 1.5rem;
+            font-size: 0.95rem;
+            color: var(--text-color);
+            min-height: 20px; /* Prevents layout shift */
+        }
+        
+        .loader {
+            display: none;
+            width: 30px;
+            height: 30px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .progress-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 0;
+            height: 10px;
+            background-color: var(--primary-color);
+            border-radius: 5px;
+            transition: width 0.3s ease;
+        }
+        
+        footer {
+            margin-top: 2rem;
+            font-size: 0.8rem;
+            color: #999;
+        }
+
+        footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        footer a:hover {
+            color: #465DEE;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="stars"></div>
+    <div id="app">
+        <h1>Pro File Converter & Compressor</h1>
+        <p class="subtitle">Convert, compress, and resize your files with ease.</p>
+        
+        <div class="drop-area" id="dropArea">
+            <p>Drag & Drop files here or click to select</p>
+            <input type="file" id="fileInput" multiple/>
+        </div>
+
+        <div id="fileInfo" style="margin-top: 1rem; font-style: italic; color: #666;"></div>
+
+        <label for="actionSelect">Select Action</label>
+        <select id="actionSelect">
+            <option value="image-to-pdf">Image(s) to PDF</option>
+            <option value="pdf-to-image">PDF to Image(s)</option>
+            <option value="compress-image">Compress Image(s)</option>
+        </select>
+        
+        <label for="qualityInput" id="qualityLabel">Compression Quality (1-100)</label>
+        <input type="number" id="qualityInput" min="1" max="100" value="80" />
+        
+        <button id="processButton">Process</button>
+        <div id="output"></div>
+        <div class="progress-container" id="progressBarContainer">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <footer>
+            <p>&copy; 2025. <a href="https://github.com/vijayrajeshr" target="_blank" rel="noopener noreferrer">Vijay Rajesh R</a></p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const actionSelect = document.getElementById('actionSelect');
+        const qualityInput = document.getElementById('qualityInput');
+        const qualityLabel = document.getElementById('qualityLabel');
+        const processButton = document.getElementById('processButton');
+        const output = document.getElementById('output');
+        const dropArea = document.getElementById('dropArea');
+        const fileInfo = document.getElementById('fileInfo');
+        const progressBarContainer = document.getElementById('progressBarContainer');
+        const progressBar = document.getElementById('progressBar');
+
+        // --- UI & Event Listeners ---
+        const updateUI = () => {
+            const action = actionSelect.value;
+            const isCompress = action === 'compress-image';
+            qualityLabel.style.display = isCompress ? 'block' : 'none';
+            qualityInput.style.display = isCompress ? 'block' : 'none';
+            fileInput.accept = isCompress || action === 'image-to-pdf' ? 'image/*' : '.pdf';
+            fileInput.multiple = action !== 'pdf-to-image';
+            document.getElementById('dropArea').querySelector('p').textContent = action !== 'pdf-to-image' ? 'Drag & Drop files here or click to select' : 'Drag & Drop a single PDF file or click to select';
+        };
+
+        actionSelect.addEventListener('change', () => {
+            updateUI();
+            fileInfo.textContent = '';
+            fileInput.value = '';
+        });
+        updateUI();
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                fileInfo.textContent = `${fileInput.files.length} file(s) selected.`;
+            } else {
+                fileInfo.textContent = '';
+            }
+        });
+
+        // Fix for "click to select"
+        dropArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.classList.add('drag-over');
+        });
+
+        dropArea.addEventListener('dragleave', () => {
+            dropArea.classList.remove('drag-over');
+        });
+
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('drag-over');
+            fileInput.files = e.dataTransfer.files;
+            fileInput.dispatchEvent(new Event('change'));
+        });
+
+        // --- Core Functions ---
+        
+        function downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        async function imageToPdf(files) {
+            output.textContent = 'Creating PDF...';
+            progressBarContainer.style.display = 'block';
+            
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const img = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        const img = new Image();
+                        img.onload = () => resolve(img);
+                        img.onerror = () => reject(`Failed to load image: ${file.name}`);
+                        img.src = e.target.result;
+                    };
+                    reader.onerror = () => reject(`Failed to read file: ${file.name}`);
+                    reader.readAsDataURL(file);
+                });
+
+                const imgWidth = pdf.internal.pageSize.getWidth();
+                const imgHeight = (img.height * imgWidth) / img.width;
+
+                if (i > 0) {
+                    pdf.addPage();
+                }
+                pdf.addImage(img, 'JPEG', 0, 0, imgWidth, imgHeight);
+
+                const progress = Math.round(((i + 1) / files.length) * 100);
+                progressBar.style.width = `${progress}%`;
+                output.textContent = `Processing image ${i + 1} of ${files.length}...`;
+            }
+            
+            const pdfBlob = pdf.output('blob');
+            downloadBlob(pdfBlob, 'converted_images.pdf');
+        }
+
+
+        async function compressImage(files, quality) {
+            output.textContent = 'Compressing images...';
+            progressBarContainer.style.display = 'block';
+            
+            const zip = new JSZip();
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const blob = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0);
+
+                            canvas.toBlob(blob => {
+                                if (blob) resolve(blob);
+                                else reject('Compression failed');
+                            }, 'image/jpeg', quality / 100);
+                        };
+                        img.onerror = () => reject(`Failed to load image: ${file.name}`);
+                        img.src = e.target.result;
+                    };
+                    reader.onerror = () => reject(`Failed to read file: ${file.name}`);
+                    reader.readAsDataURL(file);
+                });
+                zip.file(`${file.name.split('.')[0]}_compressed.jpeg`, blob);
+                
+                const progress = Math.round(((i + 1) / files.length) * 100);
+                progressBar.style.width = `${progress}%`;
+                output.textContent = `Compressing image ${i + 1} of ${files.length}...`;
+            }
+
+            const content = await zip.generateAsync({type: 'blob'});
+            downloadBlob(content, 'compressed_images.zip');
+        }
+
+
+        async function pdfToImage(file) {
+            output.textContent = 'Processing PDF...';
+            progressBarContainer.style.display = 'block';
+            const zip = new JSZip();
+            const reader = new FileReader();
+            
+            await new Promise((resolve, reject) => {
+                reader.onload = async e => {
+                    const typedarray = new Uint8Array(e.target.result);
+                    try {
+                        const pdfDoc = await pdfjsLib.getDocument(typedarray).promise;
+                        for (let i = 1; i <= pdfDoc.numPages; i++) {
+                            const page = await pdfDoc.getPage(i);
+                            const viewport = page.getViewport({ scale: 2.0 }); // Increased scale for higher quality
+                            const canvas = document.createElement('canvas');
+                            const context = canvas.getContext('2d');
+                            canvas.width = viewport.width;
+                            canvas.height = viewport.height;
+                            
+                            await page.render({ canvasContext: context, viewport: viewport }).promise;
+                            
+                            const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+                            zip.file(`page_${i}.png`, blob);
+                            
+                            const progress = Math.round((i / pdfDoc.numPages) * 100);
+                            progressBar.style.width = `${progress}%`;
+                            output.textContent = `Converting page ${i} of ${pdfDoc.numPages}...`;
+                        }
+                        
+                        const content = await zip.generateAsync({ type: "blob" });
+                        downloadBlob(content, 'pdf_pages.zip');
+                        resolve();
+
+                    } catch (err) {
+                        reject('Error processing PDF: ' + err.message);
+                    }
+                };
+                reader.onerror = () => reject('Failed to read PDF');
+                reader.readAsArrayBuffer(file);
+            });
+        }
+        
+        // --- Main Process Function ---
+        processButton.addEventListener('click', async () => {
+            processButton.disabled = true;
+            output.textContent = 'Starting process...';
+            progressBar.style.width = '0%';
+            progressBarContainer.style.display = 'block';
+
+            const files = fileInput.files;
+            if (files.length === 0) {
+                output.textContent = 'Please select one or more files.';
+                progressBarContainer.style.display = 'none';
+                processButton.disabled = false;
+                return;
+            }
+
+            try {
+                const action = actionSelect.value;
+                if (action === 'image-to-pdf') {
+                    if (!Array.from(files).every(file => file.type.startsWith('image/'))) {
+                        throw 'Please select only image files for this action.';
+                    }
+                    await imageToPdf(files);
+                } else if (action === 'compress-image') {
+                    if (!Array.from(files).every(file => file.type.startsWith('image/'))) {
+                        throw 'Please select only image files for compression.';
+                    }
+                    const quality = parseInt(qualityInput.value, 10);
+                    if (quality < 1 || quality > 100) {
+                        throw 'Compression quality must be between 1 and 100.';
+                    }
+                    await compressImage(files, quality);
+                } else if (action === 'pdf-to-image') {
+                    if (files.length !== 1 || files[0].type !== 'application/pdf') {
+                        throw 'Please select a single PDF file for this action.';
+                    }
+                    await pdfToImage(files[0]);
+                }
+                
+                output.textContent = 'Success! Your download should start shortly.';
+
+            } catch (err) {
+                output.textContent = `Error: ${err}`;
+            } finally {
+                processButton.disabled = false;
+                progressBarContainer.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
